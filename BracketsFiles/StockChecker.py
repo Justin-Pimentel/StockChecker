@@ -93,7 +93,6 @@ def main():
             break
     
     print("Exiting main.")
-    print("Lol")
 
 #Run the program and get dat GPU baby
 main()
