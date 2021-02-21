@@ -5,7 +5,15 @@ import time
 from bs4 import BeautifulSoup
 from playsound import playsound
 from datetime import datetime
+from random import randrange
 
+
+def get_sleep_time(num):
+    lower_limit = num
+    upper_limit = num + (num/2)
+    
+    return randrange(lower_limit, upper_limit)
+    
 
 #Function that takes in url and retrieves HTML content from the webpage
 def get_html(url):
@@ -39,7 +47,8 @@ def check_inv_newegg(ne_url, refresh_time, stop):
         else:
             print(str(datetime.now()) + "\t| ASUS TUF out of stock")
     
-        time.sleep(float(refresh_time))
+        rand_time = get_sleep_time(float(refresh_time))
+        time.sleep(float(rand_time))
         
 
 def check_inv_bb(bb_url, refresh_time, stop):
@@ -69,18 +78,18 @@ def main():
     ne_url = 'https://www.newegg.com/asus-geforce-rtx-3080-tuf-rtx3080-o10g-gaming/p/N82E16814126452?Description=rtx3080&cm_re=rtx3080-_-14-126-452-_-Product'
     bb_url = 'https://www.bestbuy.com/site/nvidia-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-graphics-card-titanium-and-black/6429440.p?skuId=6429440'
     
-    ne_refresh_time = input("Newegg refresh time: ")
+    #ne_refresh_time = input("Newegg refresh time: ")
     bb_refresh_time = input("Best Buy refresh time: ")
     attempts = 0
     stop_threads = False
     
     #Create threads with appropriate functions.
     #Argument list = (website url, desired refresh time, lambda stop function)
-    ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
+    #ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
     bb_checker = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
     
     #Spin up threads
-    ne_checker.start()
+    #ne_checker.start()
     bb_checker.start()
     
     #Constantly poll for user input
@@ -88,7 +97,7 @@ def main():
         stopper = input("Press 'x' to terminate: \n")
         if(stopper == 'x' or stopper == 'X'):
             stop_threads = True
-            ne_checker.join()
+            #ne_checker.join()
             bb_checker.join()
             break
     
