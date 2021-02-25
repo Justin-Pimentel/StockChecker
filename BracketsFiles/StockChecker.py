@@ -39,7 +39,7 @@ def check_inv_newegg(ne_url, refresh_time, stop):
         #Find the line that contains stock status
         oos_divs = soup.find("div", {"class": "product-inventory"})
         #print(oos_divs)
-        #Return comparison to in stock text
+        #Return comparison to known in stock text
         if(oos_divs.text == "In stock."):
             webbrowser.open_new(ne_url)
             print(str(datetime.now()) + "\t| ASUS TUF IN STOCK")
@@ -84,7 +84,7 @@ def main():
     stop_threads = False
     
     #Create threads with appropriate functions.
-    #Argument list = (website url, desired refresh time, lambda stop function)
+    #Argument list: (website url, desired refresh time, lambda stop function)
     #ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
     bb_checker = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
     
