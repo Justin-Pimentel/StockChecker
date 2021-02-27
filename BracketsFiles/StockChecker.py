@@ -14,14 +14,30 @@ def get_sleep_time(num):
     
     return randrange(lower_limit, upper_limit)
     
+def handle_exception(e, code):
+    retry_time = 10
+
+    print(str(e))
+    print("Error code: " + code + ". Retrying...")
+    time.sleep(retry_time)
 
 #Function that takes in url and retrieves HTML content from the webpage
 def get_html(url):
     #Function header tells the site that I'm a regular user and not a robot (¬_¬)
     headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.67 Safari/537.36"}
+
+    page = None
     #Use the requests library to grab HTML info from the specified URL
-    page = requests.get(url, headers=headers)
-    #print(page.status_code)
+    while page is None:
+        try:
+            page = requests.get(url, headers=headers)
+        except requests.exceptions.ConnectionError as e:
+            handle_exception(e, page.status_code)
+        except requests.exceptions.Timeout as e:
+            handle_exception(e, page.status_code)
+        except requests.exceptions.RequestException as e:
+            handle_exception(e, page.status_code)
+
     return page.content
 
 
