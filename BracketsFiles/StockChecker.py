@@ -2,6 +2,8 @@ import webbrowser
 import threading
 import requests
 import time
+import sys
+import os
 from bs4 import BeautifulSoup
 from playsound import playsound
 from datetime import datetime
@@ -9,8 +11,10 @@ from random import randrange
 
 
 def get_sleep_time(num):
-    lower_limit = num
-    upper_limit = num + (num/2)
+    #randrange only takes in ints so I typecast it in case it's a float
+    n = int(num)
+    lower_limit = n
+    upper_limit = n + int((num/4))
     
     return randrange(lower_limit, upper_limit)
     
@@ -46,7 +50,7 @@ def check_inv_newegg(ne_url, refresh_time, stop):
     while True:
         
         if(stop()):
-            print("Exiting Newegg thread...")
+            print("Exiting Newegg thread")
             break
         
         ne_html = get_html(ne_url)
@@ -55,13 +59,16 @@ def check_inv_newegg(ne_url, refresh_time, stop):
         #Find the line that contains stock status
         oos_divs = soup.find("div", {"class": "product-inventory"})
         #print(oos_divs)
+        newegg_name = soup.find("h1", {"class": "product-title"})
+        #print(newegg_name.text)
+        #print("Name: " + newegg_name.find("a").text)
         #Return comparison to known in stock text
         if(oos_divs.text == "In stock."):
             webbrowser.open_new(ne_url)
-            print(str(datetime.now()) + "\t| ASUS TUF IN STOCK")
+            print(str(datetime.now()) + "\t" + newegg_name.text + "\tIN STOCK!!!")
             playsound('Alarm1.wav')
         else:
-            print(str(datetime.now()) + "\t| ASUS TUF out of stock")
+            print(str(datetime.now()) + "\t" + newegg_name.text + "\tOUT OF STOCK")
     
         rand_time = get_sleep_time(float(refresh_time))
         time.sleep(float(rand_time))
@@ -71,7 +78,7 @@ def check_inv_bb(bb_url, refresh_time, stop):
     while True:
         
         if(stop()):
-            print("Exiting BB thread...")
+            print("Exiting BB thread")
             break
 
         bb_html = get_html(bb_url)
@@ -89,35 +96,53 @@ def check_inv_bb(bb_url, refresh_time, stop):
 
         
 def main():
-    #ne_url = input("Enter Newegg URL: ")
-    #bb_url = input("Enter BestBuy URL: ")
-    ne_url = 'https://www.newegg.com/asus-geforce-rtx-3080-tuf-rtx3080-o10g-gaming/p/N82E16814126452?Description=rtx3080&cm_re=rtx3080-_-14-126-452-_-Product'
-    bb_url = 'https://www.bestbuy.com/site/nvidia-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-graphics-card-titanium-and-black/6429440.p?skuId=6429440'
-    
-    #ne_refresh_time = input("Newegg refresh time: ")
-    bb_refresh_time = input("Best Buy refresh time: ")
+    ne_refresh_time = input("Newegg refresh time: ")
+    #bb_refresh_time = input("Best Buy refresh time: ")
     attempts = 0
     stop_threads = False
+    
+    print("Opening file...")
+    with open(os.path.join(sys.path[0], "config.txt"), "r") as f:
+        print("File '" + os.path.basename(f.name) + "' opened successfully...\n")
+        th_cnt = 0
+        for count, line in enumerate(f):
+            print("Line {}: {}".format(count, line.strip()))
+            if(line.find('newegg') != -1):
+                print("This is a newegg link\n")
+                ne_url = line.strip()
+                ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
+                th_cnt += 1
+            elif(line.find('bestbuy') != -1):
+                print("This is a best buy link\n")
+                th_cnt += 1
+            else:
+                print("This is an invalid link")
+        print(str(count+1) + " links processed. " + str(th_cnt) + " threads created.")
+    
+    """
     
     #Create threads with appropriate functions.
     #Argument list: (website url, desired refresh time, lambda stop function)
     #ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
     bb_checker = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
     
+    """
     #Spin up threads
-    #ne_checker.start()
-    bb_checker.start()
+    ne_checker.start()
+    #bb_checker.start()
     
     #Constantly poll for user input
     while True:
         stopper = input("Press 'x' to terminate: \n")
         if(stopper == 'x' or stopper == 'X'):
+            print("Terminating...")
             stop_threads = True
-            #ne_checker.join()
-            bb_checker.join()
+            ne_checker.join()
+            #bb_checker.join()
             break
     
     print("Exiting main.")
 
 #Run the program and get dat GPU baby
-main()
+if __name__ == '__main__':
+    main()
