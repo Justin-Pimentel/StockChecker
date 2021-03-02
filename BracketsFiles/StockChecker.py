@@ -139,12 +139,12 @@ def main():
     stop_threads = False
     
     #Open file and begin reading lines and creating threads
-    print("Opening file...")
+    print("\nOpening file...")
     with open(os.path.join(sys.path[0], "config.txt"), "r") as f:
-        print("File '" + os.path.basename(f.name) + "' opened successfully...\n")
+        print("File '" + os.path.basename(f.name) + "' opened successfully...")
         th_cnt = 0
         for count, line in enumerate(f):
-            print("Line {}: {}".format(count, line.strip()))
+            #print("Line {}: {}".format(count+1, line.strip()))
             if(line.find('newegg') != -1):
                 ne_url = line.strip()
                 ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
@@ -154,8 +154,8 @@ def main():
                 bb_checker = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
                 th_cnt += 1
             else:
-                print("This is an invalid link")
-        print(str(count+1) + " links processed. " + str(th_cnt) + " threads created.")
+                print("Invalid link entered")
+        print(str(count+1) + " links processed. " + str(th_cnt) + " threads created.\n")
 
     #Spin up threads
     ne_checker.start()
@@ -163,7 +163,7 @@ def main():
     
     #Constantly poll for user input
     while True:
-        stopper = input("Press 'x' to terminate: \n")
+        stopper = input("Enter 'x' to terminate: \n")
         if(stopper == 'x' or stopper == 'X'):
             print("Terminating...")
             stop_threads = True
