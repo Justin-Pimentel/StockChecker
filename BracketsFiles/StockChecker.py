@@ -155,9 +155,10 @@ def main():
                 th_cnt += 1
             else:
                 print("Invalid link entered")
-        print(str(count+1) + " links processed. " + str(th_cnt) + " threads created.\n")
+        print(str(count+1) + " links processed. " + str(th_cnt) + " threads created.")
 
     #Spin up threads
+    print("Spooling up threads...\n")
     ne_checker.start()
     bb_checker.start()
     
@@ -165,7 +166,7 @@ def main():
     while True:
         stopper = input("Enter 'x' to terminate: \n")
         if(stopper == 'x' or stopper == 'X'):
-            print("Terminating...")
+            print("Terminating threads...")
             stop_threads = True
             ne_checker.join()
             bb_checker.join()
