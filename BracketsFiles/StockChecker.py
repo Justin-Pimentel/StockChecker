@@ -135,32 +135,39 @@ def main():
     #Get user input data
     ne_refresh_time = input("Newegg refresh time: ")
     bb_refresh_time = input("Best Buy refresh time: ")
-    attempts = 0
+    max_threads = 8
     stop_threads = False
+    threads = [None] * max_threads
     
     #Open file and begin reading lines and creating threads
     print("\nOpening file...")
     with open(os.path.join(sys.path[0], "config.txt"), "r") as f:
         print("File '" + os.path.basename(f.name) + "' opened successfully...")
-        th_cnt = 0
+        ne_th_cnt = 0
+        bb_th_cnt = 0
         for count, line in enumerate(f):
+            if(count == max_threads):
+                break
+
             #print("Line {}: {}".format(count+1, line.strip()))
             if(line.find('newegg') != -1):
                 ne_url = line.strip()
-                ne_checker = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
-                th_cnt += 1
+                threads[count] = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
+                ne_th_cnt += 1
             elif(line.find('bestbuy') != -1):
                 bb_url = line.strip()
-                bb_checker = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
-                th_cnt += 1
+                threads[count] = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
+                bb_th_cnt += 1
             else:
                 print("Invalid link entered")
-        print(str(count+1) + " links processed. " + str(th_cnt) + " threads created.")
+        print(str(count+1) + " links processed. " + str(ne_th_cnt + bb_th_cnt) + " threads created.")
+        print("Newegg threads: " + str(ne_th_cnt) + ". Best Buy threads: " + str(bb_th_cnt))
 
     #Spin up threads
     print("Spooling up threads...\n")
-    ne_checker.start()
-    bb_checker.start()
+    for thread in threads:
+        if thread is not None:
+            thread.start()
     
     #Constantly poll for user input
     while True:
@@ -168,8 +175,9 @@ def main():
         if(stopper == 'x' or stopper == 'X'):
             print("Terminating threads...")
             stop_threads = True
-            ne_checker.join()
-            bb_checker.join()
+            for thread in threads:
+                if thread is not None:
+                    thread.join()
             break
     
     print("Exiting main.")
