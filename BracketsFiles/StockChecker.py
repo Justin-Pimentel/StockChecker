@@ -9,6 +9,7 @@ from playsound import playsound
 from datetime import datetime
 from random import randrange
 
+exit_flag = threading.Event()
 
 def get_sleep_time(num):
     #randrange only takes in ints so I typecast it in case it's a float
@@ -65,7 +66,7 @@ def get_html(url):
 
 
 #Function that searches the content's HTML for inventory status
-def check_inv_newegg(ne_url, refresh_time, stop):
+def check_inv_newegg(ne_url, refresh_time, stop, name):
     while True:
         
         if(stop()):
@@ -89,16 +90,17 @@ def check_inv_newegg(ne_url, refresh_time, stop):
         #Return comparison to known in stock text
         if(oos_divs.text == "In stock."):
             webbrowser.open_new(ne_url)
-            print(str(datetime.now()) + "\t" + newegg_name.text + "\tIN STOCK!!!")
-            playsound('Alarm1.wav')
+            print(name + "\t" + str(datetime.now()) + "\t" + newegg_name.text + "\tIN STOCK!!!")
+            playsound(os.path.join(sys.path[0], "Alarm.wav"))
+            exit_flag.wait(3000)
         else:
-            print(str(datetime.now()) + "\t" + newegg_name.text + "\tOUT OF STOCK")
+            print(name + "\t" + str(datetime.now()) + "\t" + newegg_name.text + "\tOUT OF STOCK")
     
         rand_time = get_sleep_time(float(refresh_time))
         time.sleep(float(rand_time))
         
 
-def check_inv_bb(bb_url, refresh_time, stop):
+def check_inv_bb(bb_url, refresh_time, stop, name):
     #Get product name
     name = get_name_bb(bb_url)
 
@@ -122,10 +124,11 @@ def check_inv_bb(bb_url, refresh_time, stop):
         #Handle result of html scrape
         if(search_result == -1):
             webbrowser.open_new(bb_url)
-            print(str(datetime.now()) + "\t" + name + "\tIN STOCK!!!")
-            playsound('Alarm1.wav')
+            print(name + "\t" + str(datetime.now()) + "\t" + name + "\tIN STOCK!!!")
+            playsound(os.path.join(sys.path[0], "Alarm.wav"))
+            exit_flag.wait(3000)
         else:
-            print(str(datetime.now()) + "\t" + name + "\tOUT OF STOCK")
+            print(name + "\t" + str(datetime.now()) + "\t" + name + "\tOUT OF STOCK")
         
         #Sleep for the allotted amount of time
         time.sleep(float(refresh_time))
@@ -152,11 +155,13 @@ def main():
             #print("Line {}: {}".format(count+1, line.strip()))
             if(line.find('newegg') != -1):
                 ne_url = line.strip()
-                threads[count] = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads))
+                name = "thread" + str(count)
+                threads[count] = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads, name))
                 ne_th_cnt += 1
             elif(line.find('bestbuy') != -1):
                 bb_url = line.strip()
-                threads[count] = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads))
+                name = "thread" + str(count)
+                threads[count] = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads, name))
                 bb_th_cnt += 1
             else:
                 print("Invalid link entered")
@@ -170,11 +175,14 @@ def main():
             thread.start()
     
     #Constantly poll for user input
+    #TODO: Finish termination of individual threads
     while True:
         stopper = input("Enter 'x' to terminate: \n")
-        if(stopper == 'x' or stopper == 'X'):
+        term_list = stopper.split()
+        if(term_list[0] == 'x' or term_list[0] == 'X'):
             print("Terminating threads...")
             stop_threads = True
+            exit_flag.set()
             for thread in threads:
                 if thread is not None:
                     thread.join()
