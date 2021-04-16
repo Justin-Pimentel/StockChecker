@@ -15,7 +15,7 @@ def get_sleep_time(num):
     #randrange only takes in ints so I typecast it in case it's a float
     n = int(num)
     lower_limit = n
-    upper_limit = n + int((num/4))
+    upper_limit = n + int((num/rand_denominator))
     
     return randrange(lower_limit, upper_limit)
 
@@ -66,7 +66,7 @@ def get_html(url):
 
 
 #Function that searches the content's HTML for inventory status
-def check_inv_newegg(ne_url, refresh_time, stop, name):
+def check_inv_newegg(ne_url, stop, name):
     while True:
         
         if(stop()):
@@ -92,15 +92,15 @@ def check_inv_newegg(ne_url, refresh_time, stop, name):
             webbrowser.open_new(ne_url)
             print(name + "\t" + str(datetime.now()) + "\t" + newegg_name.text + "\tIN STOCK!!!")
             playsound(os.path.join(sys.path[0], "Alarm.wav"))
-            exit_flag.wait(3000)
+            exit_flag.wait(int(success_wait_time))
         else:
             print(name + "\t" + str(datetime.now()) + "\t" + newegg_name.text + "\tOUT OF STOCK")
     
-        rand_time = get_sleep_time(float(refresh_time))
+        rand_time = get_sleep_time(float(ne_refresh_time))
         time.sleep(float(rand_time))
         
 
-def check_inv_bb(bb_url, refresh_time, stop, name):
+def check_inv_bb(bb_url, stop, name):
     #Get product name
     name = get_name_bb(bb_url)
 
@@ -126,45 +126,67 @@ def check_inv_bb(bb_url, refresh_time, stop, name):
             webbrowser.open_new(bb_url)
             print(name + "\t" + str(datetime.now()) + "\t" + name + "\tIN STOCK!!!")
             playsound(os.path.join(sys.path[0], "Alarm.wav"))
-            exit_flag.wait(3000)
+            exit_flag.wait(int(success_wait_time))
         else:
             print(name + "\t" + str(datetime.now()) + "\t" + name + "\tOUT OF STOCK")
         
         #Sleep for the allotted amount of time
-        time.sleep(float(refresh_time))
+        time.sleep(float(bb_refresh_time))
 
         
 def main():
     #Get user input data
-    ne_refresh_time = input("Newegg refresh time: ")
-    bb_refresh_time = input("Best Buy refresh time: ")
-    max_threads = 8
+    global ne_refresh_time
+    global bb_refresh_time
+    global success_wait_time
+    global rand_denominator
+    global MAX_THREADS
     stop_threads = False
-    threads = [None] * max_threads
+    NUM_SETTINGS = 5
+    settings = [None] * NUM_SETTINGS
+
+    #Gather data from settings.txt
+    print("Opening file...")
+    with open(os.path.join(sys.path[0], "settings.txt"), "r") as e:
+        print("File '" + os.path.basename(e.name) + "' opened successfully...")
+   
+        for num, line in enumerate(e):
+            setting = [x.strip() for x in line.split(":")]
+            settings[num] = setting[1]
     
+    #Assign global vars
+    ne_refresh_time = settings[0]
+    bb_refresh_time = settings[1]
+    success_wait_time = settings[2]
+    rand_denominator = settings[3]
+    MAX_THREADS = settings[4]
+    threads = [None] * int(MAX_THREADS)
+
     #Open file and begin reading lines and creating threads
-    print("\nOpening file...")
-    with open(os.path.join(sys.path[0], "config.txt"), "r") as f:
+    print("Opening file...")
+    with open(os.path.join(sys.path[0], "links.txt"), "r") as f:
         print("File '" + os.path.basename(f.name) + "' opened successfully...")
         ne_th_cnt = 0
         bb_th_cnt = 0
+        
         for count, line in enumerate(f):
-            if(count == max_threads):
+            if(count == MAX_THREADS):
                 break
 
             #print("Line {}: {}".format(count+1, line.strip()))
             if(line.find('newegg') != -1):
                 ne_url = line.strip()
                 name = "thread" + str(count)
-                threads[count] = threading.Thread(target=check_inv_newegg, args=(ne_url, ne_refresh_time, lambda : stop_threads, name))
+                threads[count] = threading.Thread(target=check_inv_newegg, args=(ne_url, lambda : stop_threads, name))
                 ne_th_cnt += 1
             elif(line.find('bestbuy') != -1):
                 bb_url = line.strip()
                 name = "thread" + str(count)
-                threads[count] = threading.Thread(target=check_inv_bb, args=(bb_url, bb_refresh_time, lambda : stop_threads, name))
+                threads[count] = threading.Thread(target=check_inv_bb, args=(bb_url, lambda : stop_threads, name))
                 bb_th_cnt += 1
             else:
                 print("Invalid link entered")
+
         print(str(count+1) + " links processed. " + str(ne_th_cnt + bb_th_cnt) + " threads created.")
         print("Newegg threads: " + str(ne_th_cnt) + ". Best Buy threads: " + str(bb_th_cnt))
 

@@ -1,0 +1,5 @@
+ne_refresh_time:10
+bb_refresh_time:10
+success_wait_time:3000
+rand_denominator:4
+MAX_THREADS:8
